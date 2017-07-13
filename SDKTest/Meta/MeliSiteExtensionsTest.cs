@@ -11,7 +11,7 @@ namespace MercadoLibre.SDK.Meta
         {
             Assert.AreEqual(MeliSite.Argentina, "MLA".ToMeliSite());
             Assert.AreEqual(MeliSite.Brasil, "MLB".ToMeliSite());
-            Assert.AreEqual(MeliSite.Chile, "MCL".ToMeliSite());
+            Assert.AreEqual(MeliSite.Chile, "MLC".ToMeliSite());
             Assert.AreEqual(MeliSite.Colombia, "MCO".ToMeliSite());
             Assert.AreEqual(MeliSite.CostaRica, "MCR".ToMeliSite());
             Assert.AreEqual(MeliSite.Dominicana, "MRD".ToMeliSite());
@@ -41,7 +41,7 @@ namespace MercadoLibre.SDK.Meta
         {
             Assert.AreEqual("MLA", MeliSite.Argentina.ToSiteId());
             Assert.AreEqual("MLB", MeliSite.Brasil.ToSiteId());
-            Assert.AreEqual("MCL", MeliSite.Chile.ToSiteId());
+            Assert.AreEqual("MLC", MeliSite.Chile.ToSiteId());
             Assert.AreEqual("MCO", MeliSite.Colombia.ToSiteId());
             Assert.AreEqual("MCR", MeliSite.CostaRica.ToSiteId());
             Assert.AreEqual("MRD", MeliSite.Dominicana.ToSiteId());

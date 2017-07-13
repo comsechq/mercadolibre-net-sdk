@@ -34,10 +34,11 @@
         [MeliDomain("mercadolibre.com.ec")]
         Ecuador,
         
-        [MeliSiteId("MCL")]
+        [MeliSiteId("MLC")]
         [MeliCountryCode("CL")]
         [MeliDomain("mercadolibre.cl")]
         Chile,
+
         [MeliSiteId("MLM")]
         [MeliCountryCode("MX")]
         [MeliDomain("mercadolibre.com.mx")]
