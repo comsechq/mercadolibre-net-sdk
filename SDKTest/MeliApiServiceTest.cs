@@ -37,6 +37,9 @@ namespace MercadoLibre.SDK
 
             providerMock.Setup(call => call.Create(It.IsAny<bool>()))
                         .Returns(new HttpClient(mockHttp));
+
+            providerMock.Setup(call => call.Create(It.IsAny<HttpClientHandler>(), It.IsAny<bool>()))
+                        .Returns(new HttpClient(mockHttp));
         }
 
         [Test]

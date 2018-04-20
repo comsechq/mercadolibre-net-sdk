@@ -44,8 +44,9 @@ namespace MercadoLibre.SDK
         /// </summary>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null);
+        Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a GET request and deserialises the JSON response.
@@ -53,8 +54,9 @@ namespace MercadoLibre.SDK
         /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<T> GetAsync<T>(string resource, HttpParams parameters = null);
+        Task<T> GetAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a POST request.
@@ -62,8 +64,9 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null);
+        Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a POST request and deserialises the JSON response.
@@ -72,8 +75,9 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null);
+        Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a PUT request.
@@ -81,8 +85,9 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null);
+        Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a PUT request and deserialises the JSON response.
@@ -91,16 +96,18 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null);
+        Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a DELETE request.
         /// </summary>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null);
+        Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null);
 
         /// <summary>
         /// Sends a DELETE request and deserialises the JSON response.
@@ -108,7 +115,8 @@ namespace MercadoLibre.SDK
         /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
+        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null);
+        Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null);
     }
 }
