@@ -37,7 +37,7 @@ namespace MercadoLibre.SDK.Http
         }
 
         [Test]
-        public async void TestHttpClientWithoutIntercept()
+        public async Task TestHttpClientWithoutIntercept()
         {
             var innerHandler = new FakeHandler();
 
@@ -58,7 +58,7 @@ namespace MercadoLibre.SDK.Http
         }
 
         [Test]
-        public async void TestHttpClientWithRetryIntercept()
+        public async Task TestHttpClientWithRetryIntercept()
         {
             // The fake handler lets us track the number of 'actual' requests
             var innerHandler = new FakeHandler();

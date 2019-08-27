@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -9,66 +8,19 @@
     <OutputType>Library</OutputType>
     <RootNamespace>MercadoLibre.SDK</RootNamespace>
     <AssemblyName>MercadoLibreSdk</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <Prefer32Bit>false</Prefer32Bit>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>MercadoLibreSdk</PackageId>
+    <Version>2</Version>
+    <Authors>xetorthio, TioBorracho, aleml86, ZeusMode, bounav, puchi84</Authors>
+    <PackageProjectUrl>https://github.com/comsechq/mercadolibre-net-sdk</PackageProjectUrl>
+    <Description>Fork of the Mercado Libre .NET SDK to generate access token and query the Mercado Libre API.</Description>
+    <PackageReleaseNotes>Now targeting .net standard 2.0</PackageReleaseNotes>
+    <Product />
+    <Company>Comsec</Company>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="HttpParamsUtility, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\HttpParamsUtility.1.0.0\lib\HttpParamsUtility.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Web" />
+    <PackageReference Include="HttpParamsUtility" Version="2.0.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="Http\HttpClientProvider.cs" />
-    <Compile Include="Http\RetryDelegatingHandler.cs" />
-    <Compile Include="IMeliApiService.cs" />
-    <Compile Include="MeliApiService.cs" />
-    <Compile Include="Http\IHttpClientProvider.cs" />
-    <Compile Include="MeliCredentials.cs" />
-    <Compile Include="Meta\BaseValueAttribute.cs" />
-    <Compile Include="Meta\EnumHelper.cs" />
-    <Compile Include="Meta\MeliDomainAttribute.cs" />
-    <Compile Include="Meta\MeliSiteExtensions.cs" />
-    <Compile Include="Meta\MeliCountryCodeAttribute.cs" />
-    <Compile Include="Meta\MeliSite.cs" />
-    <Compile Include="Meta\MeliSiteIdAttribute.cs" />
-    <Compile Include="Models\ErrorResponse.cs" />
-    <Compile Include="Models\TokenResponse.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-    <None Include="SDK.nuspec" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

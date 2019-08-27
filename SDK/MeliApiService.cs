@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Specialized;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -75,7 +73,7 @@ namespace MercadoLibre.SDK
 
             var domain = site.ToDomain();
 
-            return string.Format("https://auth.{0}/authorization?{1}", domain, parameters);
+            return $"https://auth.{domain}/authorization?{parameters}";
         }
 
         /// <summary>
@@ -156,7 +154,7 @@ namespace MercadoLibre.SDK
                     {
                         var request = new HttpRequestMessage
                                       {
-                                          RequestUri = new Uri(string.Format("{0}oauth/token?{1}", ApiUrl, parameters)),
+                                          RequestUri = new Uri($"{ApiUrl}oauth/token?{parameters}"),
                                           Method = HttpMethod.Post,
                                       };
 
@@ -222,7 +220,7 @@ namespace MercadoLibre.SDK
         {
             var requestUrl = parameters == null
                 ? resource
-                : string.Format("{0}?{1}", resource, parameters);
+                : $"{resource}?{parameters}";
 
             client.BaseAddress = baseAddress;
 

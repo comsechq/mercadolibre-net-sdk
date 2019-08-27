@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using HttpParamsUtility;
 using MercadoLibre.SDK.Http;
 using MercadoLibre.SDK.Meta;
@@ -72,7 +73,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestAuthorizeAsyncIsSuccessfull()
+        public async Task TestAuthorizeAsyncIsSuccessfull()
         {
             service.Credentials.Site = MeliSite.Mexico;
 
@@ -111,7 +112,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestAuthorizeAsyncIsNotSuccessfull()
+        public async Task TestAuthorizeAsyncIsNotSuccessfull()
         {
             service.Credentials.Site = MeliSite.Ecuador;
 
@@ -129,7 +130,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestGetAsyncToGetSites()
+        public async Task TestGetAsyncToGetSites()
         {
             service.Credentials.Site = MeliSite.Peru;
             
@@ -154,7 +155,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestGetAsyncHandleErrors()
+        public async Task TestGetAsyncHandleErrors()
         {
             mockHttp.Expect(HttpMethod.Get, "/users/me")
                     .Respond(HttpStatusCode.InternalServerError);
@@ -167,7 +168,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestPostAsync()
+        public async Task TestPostAsync()
         {
             mockHttp.Expect(HttpMethod.Post, "/items")
                     .WithQueryString("hello", "boo boo")
@@ -182,7 +183,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestPutAsync()
+        public async Task TestPutAsync()
         {
             mockHttp.Expect(HttpMethod.Put, "/items/123")
                     .WithContent(@"{""foo"":""bar""}")
@@ -196,7 +197,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async void TestDeleteAsync()
+        public async Task TestDeleteAsync()
         {
             mockHttp.Expect(HttpMethod.Delete, "/items/123")
                     .Respond(HttpStatusCode.OK);

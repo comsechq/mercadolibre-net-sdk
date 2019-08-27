@@ -12,8 +12,5 @@ SDK/.DS_Store
 SDK*/obj/*
 [Bb]in
 [Dd]ebug*/
-/.vs/net-sdk/v15/Server/sqlite3/db.lock
-/.vs/net-sdk/v15/Server/sqlite3/storage.ide
-/.vs/net-sdk/v15/Server/sqlite3/storage.ide-shm
-/.vs/net-sdk/v15/Server/sqlite3/storage.ide-wal
+/.vs/*
 /net-sdk.sln.DotSettings
