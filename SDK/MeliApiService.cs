@@ -143,7 +143,7 @@ namespace MercadoLibre.SDK
 
                 var response = JsonConvert.DeserializeObject<ErrorResponse>(content);
 
-                if (response.Message == "invalid_token")
+                if (response.Message == "Invalid token")
                 {
                     var parameters = new HttpParams().Add("grant_type", "refresh_token")
                                                      .Add("client_id", Credentials.ClientId)
