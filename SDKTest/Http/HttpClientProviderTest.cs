@@ -53,13 +53,13 @@ namespace MercadoLibre.SDK.Http
             var innerHandler = new FakeHandler();
 
             var provider = new HttpClientProvider
-                           {
-                               RetryIntercept = async delegate
-                                   {
-                                       interceptCount++;
-                                       return false;
-                                   }
-                           };
+            {
+                RetryIntercept = async delegate
+                {
+                    interceptCount++;
+                    return false;
+                }
+            };
 
             var client = provider.Create(innerHandler);
 

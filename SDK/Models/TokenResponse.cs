@@ -1,11 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace MercadoLibre.SDK.Models
 {
     /// <summary>
     /// Model returned by the API when requesting or refreshing a token.
     /// </summary>
-    [DataContract]
     public class TokenResponse
     {
         /// <summary>
@@ -14,7 +13,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The access token.
         /// </value>
-        [DataMember(Name = "access_token")]
+        [JsonPropertyName("access_token")]
         public string AccessToken { get; set; }
 
         /// <summary>
@@ -34,7 +33,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The type of the token.
         /// </value>
-        [DataMember(Name = "token_type")]
+        [JsonPropertyName("token_type")]
         public string TokenType { get; set; }
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The expires in.
         /// </value>
-        [DataMember(Name = "expires_in")]
+        [JsonPropertyName("expires_in")]
         public int ExpiresIn { get; set; }
 
         /// <summary>
@@ -52,7 +51,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The scope.
         /// </value>
-        [DataMember(Name = "scope")]
+        [JsonPropertyName("scope")]
         public string Scope { get; set; }
 
         /// <summary>
@@ -61,7 +60,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The user identifier.
         /// </value>
-        [DataMember(Name = "user_id")]
+        [JsonPropertyName("user_id")]
         public int UserId { get; set; }
 
         /// <summary>
@@ -70,7 +69,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The refresh token.
         /// </value>
-        [DataMember(Name = "refresh_token")]
+        [JsonPropertyName("refresh_token")]
         public string RefreshToken { get; set; }
     }
 }

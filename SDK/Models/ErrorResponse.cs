@@ -1,11 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace MercadoLibre.SDK.Models
 {
     /// <summary>
     /// Model returned by the API when a request is not successful.
     /// </summary>
-    [DataContract]
     public class ErrorResponse
     {
         /// <summary>
@@ -14,7 +13,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The message.
         /// </value>
-        [DataMember(Name = "message")]
+        [JsonPropertyName("message")]
         public string Message { get; set; }
 
         /// <summary>
@@ -23,7 +22,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The error.
         /// </value>
-        [DataMember(Name = "error")]
+        [JsonPropertyName("error")]
         public string Error { get; set; }
 
         /// <summary>
@@ -32,7 +31,7 @@ namespace MercadoLibre.SDK.Models
         /// <value>
         /// The status.
         /// </value>
-        [DataMember(Name = "status")]
+        [JsonPropertyName("status")]
         public int Status { get; set; }
     }
 }

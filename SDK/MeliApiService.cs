@@ -2,13 +2,13 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 using HttpParamsUtility;
 using MercadoLibre.SDK.Http;
 using MercadoLibre.SDK.Meta;
 using MercadoLibre.SDK.Models;
-using Newtonsoft.Json;
 
 namespace MercadoLibre.SDK
 {
@@ -88,7 +88,7 @@ namespace MercadoLibre.SDK
         {
             if (Credentials == null)
             {
-                throw new ApplicationException("Credentials property not initalised.");
+                throw new ApplicationException("Credentials property not initialized.");
             }
 
             var success = false;
@@ -139,11 +139,11 @@ namespace MercadoLibre.SDK
                 && !string.IsNullOrEmpty(Credentials.RefreshToken)
                 && refreshTokenAttempt <= 1)
             {
-                var content = await httpResponseMessage.Content.ReadAsStringAsync();
+                var content = await httpResponseMessage.Content.ReadAsStreamAsync();
 
-                var response = JsonConvert.DeserializeObject<ErrorResponse>(content);
+                var response = await JsonSerializer.DeserializeAsync<ErrorResponse>(content);
 
-                if (response.Message == "invalid_token")
+                if (response?.Message == "invalid_token")
                 {
                     var parameters = new HttpParams().Add("grant_type", "refresh_token")
                                                      .Add("client_id", Credentials.ClientId)
@@ -162,9 +162,9 @@ namespace MercadoLibre.SDK
 
                         if (tokenResponse.IsSuccessStatusCode)
                         {
-                            var json = await tokenResponse.Content.ReadAsStringAsync();
+                            var json = await tokenResponse.Content.ReadAsStreamAsync();
 
-                            var newTokens = JsonConvert.DeserializeObject<TokenResponse>(json);
+                            var newTokens = await JsonSerializer.DeserializeAsync<TokenResponse>(json);
 
                             if (newTokens != null)
                             {
@@ -232,7 +232,7 @@ namespace MercadoLibre.SDK
 
             if (content != null)
             {
-                var json = JsonConvert.SerializeObject(content);
+                var json = JsonSerializer.Serialize(content);
 
                 request.Content = new StringContent(json);
             }
@@ -246,16 +246,16 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
-        /// Sends the specified client and deserialises the JSON response to the given <see cref="T" /> model.
+        /// Sends the specified client and deserializes the JSON response to the given <see cref="T" /> model.
         /// </summary>
-        /// <typeparam name="T">Should be a DataContract class.</typeparam>
+        /// <typeparam name="T">The type of the model expected as a JSON response.</typeparam>
         /// <param name="client">The HTTP client.</param>
         /// <param name="method">The method.</param>
         /// <param name="baseAddress">The base address.</param>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="content">The content (will be serialised to JSON).</param>
-        /// <returns></returns>
+        /// <param name="content">The content (will be serialized to JSON).</param>
+        /// <returns><see cref="T"/></returns>
         protected async Task<T> SendAsync<T>(HttpClient client, HttpMethod method, Uri baseAddress, string resource, HttpParams parameters, object content = null)
         {
             var result = default(T);
@@ -264,9 +264,9 @@ namespace MercadoLibre.SDK
 
             if (response.IsSuccessStatusCode)
             {
-                var json = await response.Content.ReadAsStringAsync();
+                var json = await response.Content.ReadAsStreamAsync();
 
-                result = JsonConvert.DeserializeObject<T>(json);
+                result = await JsonSerializer.DeserializeAsync<T>(json);
             }
             
             return result;
@@ -290,9 +290,9 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
-        /// Sends a GET request and deserialises the JSON response.
+        /// Sends a GET request and deserializes the JSON response.
         /// </summary>
-        /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
+        /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>
@@ -326,9 +326,9 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
-        /// Sends a POST request and deserialises the JSON response.
+        /// Sends a POST request and deserializes the JSON response.
         /// </summary>
-        /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
+        /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
@@ -363,9 +363,9 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
-        /// Sends a PUT request and deserialises the JSON response.
+        /// Sends a PUT request and deserializes the JSON response.
         /// </summary>
-        /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
+        /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
@@ -399,9 +399,9 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
-        /// Sends a DELETE request and deserialises the JSON response.
+        /// Sends a DELETE request and deserializes the JSON response.
         /// </summary>
-        /// <typeparam name="T">The class to use to deserialise the JSON response.</typeparam>
+        /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>

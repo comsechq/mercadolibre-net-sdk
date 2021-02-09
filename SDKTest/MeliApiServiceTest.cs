@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using HttpParamsUtility;
 using MercadoLibre.SDK.Http;
 using MercadoLibre.SDK.Meta;
 using MercadoLibre.SDK.Models;
 using Moq;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 
@@ -73,7 +74,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async Task TestAuthorizeAsyncIsSuccessfull()
+        public async Task TestAuthorizeAsyncIsSuccessful()
         {
             service.Credentials.Site = MeliSite.Mexico;
 
@@ -95,7 +96,7 @@ namespace MercadoLibre.SDK
                     .WithQueryString("client_secret", "secret")
                     .WithQueryString("code", "valid code with refresh token")
                     .WithQueryString("redirect_uri", "https://someurl.com")
-                    .Respond("application/json", JsonConvert.SerializeObject(response));
+                    .Respond("application/json", JsonSerializer.Serialize(response));
 
             var success = await service.AuthorizeAsync("valid code with refresh token", "https://someurl.com");
 
@@ -112,7 +113,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public async Task TestAuthorizeAsyncIsNotSuccessfull()
+        public async Task TestAuthorizeAsyncIsNotSuccessful()
         {
             service.Credentials.Site = MeliSite.Ecuador;
 
@@ -128,6 +129,15 @@ namespace MercadoLibre.SDK
 
             mockHttp.VerifyNoOutstandingExpectation();
         }
+        
+        public class SiteModel
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+            
+            [JsonPropertyName("name")]
+            public string Name { get; set; }
+        }
 
         [Test]
         public async Task TestGetAsyncToGetSites()
@@ -137,7 +147,7 @@ namespace MercadoLibre.SDK
             var responsePayload = new[] {new {id = "MLA", name = "Argentina"}, new {id = "MLB", name = "Brazil"}};
 
             mockHttp.Expect(HttpMethod.Get, "https://api.mercadolibre.com/sites")
-                    .Respond("application/json", JsonConvert.SerializeObject(responsePayload));
+                    .Respond("application/json", JsonSerializer.Serialize(responsePayload));
 
             var response = await service.GetAsync("/sites");
 
@@ -145,11 +155,11 @@ namespace MercadoLibre.SDK
 
             var json = await response.Content.ReadAsStringAsync();
 
-            var sites = JsonConvert.DeserializeAnonymousType(json, new[] {new {id = "Mxx", name = "name"}});
+            var sites = JsonSerializer.Deserialize<SiteModel[]>(json);
 
             Assert.Less(0, sites.Length);
-            Assert.AreEqual("MLA", sites[0].id);
-            Assert.AreEqual("Argentina", sites[0].name);
+            Assert.AreEqual("MLA", sites[0].Id);
+            Assert.AreEqual("Argentina", sites[0].Name);
 
             mockHttp.VerifyNoOutstandingExpectation();
         }
