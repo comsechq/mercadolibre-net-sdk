@@ -49,10 +49,10 @@ namespace MercadoLibre.SDK
         public IHttpClientProvider HttpClientProvider { get; set; }
 
         /// <summary>
-        /// Gets or sets the crendentials.
+        /// Gets or sets the credentials.
         /// </summary>
         /// <value>
-        /// The crendentials.
+        /// The credentials.
         /// </value>
         public MeliCredentials Credentials { get; set; }
 
@@ -143,7 +143,7 @@ namespace MercadoLibre.SDK
 
                 var response = await JsonSerializer.DeserializeAsync<ErrorResponse>(content);
 
-                if (response?.Message == "invalid_token")
+                if (response?.Message.Equals("invalid token", StringComparison.InvariantCultureIgnoreCase) ?? false)
                 {
                     var parameters = new HttpParams().Add("grant_type", "refresh_token")
                                                      .Add("client_id", Credentials.ClientId)
