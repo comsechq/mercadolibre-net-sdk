@@ -76,11 +76,8 @@ namespace MercadoLibre.SDK.Http
                                          InnerHandler = innerMessageHandler
                                      });
             }
-                
-            if (InitialiseWith != null)
-            {
-                InitialiseWith(client);
-            }
+
+            InitialiseWith?.Invoke(client);
 
             return client;
         }

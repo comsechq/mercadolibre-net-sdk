@@ -22,7 +22,7 @@ namespace MercadoLibre.SDK.Meta
         }
 
         /// <summary>
-        /// Froms the site identifier.
+        /// Convert a siteId string to a <see cref="MeliSite"/> object.
         /// </summary>
         /// <param name="siteId">The site identifier.</param>
         /// <returns></returns>
@@ -35,9 +35,9 @@ namespace MercadoLibre.SDK.Meta
 
             foreach (MeliSite value in Enum.GetValues(typeof (MeliSite)))
             {
-                var siteIdForsite = value.ToSiteId();
+                var siteIdForSite = value.ToSiteId();
 
-                if (siteIdForsite.IndexOf(siteId, StringComparison.InvariantCultureIgnoreCase) != -1)
+                if (siteIdForSite.IndexOf(siteId, StringComparison.InvariantCultureIgnoreCase) != -1)
                 {
                     site = value;
                     found = true;

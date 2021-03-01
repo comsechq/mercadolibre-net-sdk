@@ -11,7 +11,7 @@ namespace MercadoLibre.SDK.Http
     public class RetryDelegatingHandler : DelegatingHandler
     {
         /// <summary>
-        /// Gets or sets a hook to determinue (and optionaly take action (e.g. authenticate)) wether the request should be retried or not.
+        /// Gets or sets a hook to determine (and optionally take action (e.g. authenticate)) whether the request should be retried or not.
         /// </summary>
         /// <value>
         /// The retry intercept.
@@ -27,13 +27,13 @@ namespace MercadoLibre.SDK.Http
         /// <returns>
         /// Returns <see cref="T:System.Threading.Tasks.Task`1" />. The task object representing the asynchronous operation.
         /// </returns>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var response = await base.SendAsync(request, cancellationToken);
 
             if (RetryIntercept != null)
             {
-                // Hook to determine wether the request should be retried or not
+                // Hook to determine whether the request should be retried or not
                 if (await RetryIntercept(request, response))
                 {
                     // Retry

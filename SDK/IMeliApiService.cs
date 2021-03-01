@@ -11,10 +11,10 @@ namespace MercadoLibre.SDK
     public interface IMeliApiService
     {
         /// <summary>
-        /// Gets or sets the crendentials.
+        /// Gets or sets the credentials.
         /// </summary>
         /// <value>
-        /// The crendentials.
+        /// The credentials.
         /// </value>
         /// <remarks>
         /// - Don't forget to set this before calling methods that require an API token.

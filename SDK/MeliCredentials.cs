@@ -5,7 +5,7 @@ using MercadoLibre.SDK.Models;
 namespace MercadoLibre.SDK
 {
     /// <summary>
-    /// Convienience class to store the mercado libre crendentials in one place.
+    /// Convenience class to store the mercado libre credentials in one place.
     /// </summary>
     public class MeliCredentials
     {
@@ -108,10 +108,7 @@ namespace MercadoLibre.SDK
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected virtual void OnTokensChanged(MeliTokenEventArgs e)
         {
-            if (TokensChanged != null)
-            {
-                TokensChanged(this, e);
-            }
+            TokensChanged?.Invoke(this, e);
         }
     }
 
