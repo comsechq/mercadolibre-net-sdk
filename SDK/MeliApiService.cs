@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 using HttpParamsUtility;
@@ -274,9 +275,12 @@ namespace MercadoLibre.SDK
 
             if (response.IsSuccessStatusCode)
             {
+                var options = new JsonSerializerOptions();
+                options.Converters.Add(new JsonStringEnumConverterWithAttributeSupport());
+
                 var json = await response.Content.ReadAsStreamAsync();
 
-                result = await JsonSerializer.DeserializeAsync<T>(json);
+                result = await JsonSerializer.DeserializeAsync<T>(json, options);
             }
             
             return result;

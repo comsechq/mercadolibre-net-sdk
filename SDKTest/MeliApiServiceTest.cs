@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -137,17 +138,31 @@ namespace MercadoLibre.SDK
             
             [JsonPropertyName("name")]
             public string Name { get; set; }
+
+            [JsonPropertyName("country")]
+            public CountryEnumModel Country { get; set; }
+        }
+
+        public enum CountryEnumModel
+        {
+            [EnumMember(Value = "Argentina")]
+            AR,
+            [EnumMember(Value = "Brazil")]
+            BR
         }
 
         [Test]
         public async Task TestGetAsyncToGetSites()
         {
             service.Credentials.Site = MeliSite.Peru;
-            
-            var responsePayload = new[] {new {id = "MLA", name = "Argentina"}, new {id = "MLB", name = "Brazil"}};
+
+            var responsePayload = new[] {new {id = "MLA", name = "Argentina", country = "Argentina"}, new {id = "MLB", name = "Brazil", country = "Brazil"}};
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverterWithAttributeSupport());
 
             mockHttp.Expect(HttpMethod.Get, "https://api.mercadolibre.com/sites")
-                    .Respond("application/json", JsonSerializer.Serialize(responsePayload));
+                    .Respond("application/json", JsonSerializer.Serialize(responsePayload, options));
 
             var response = await service.GetAsync("/sites");
 
@@ -155,11 +170,12 @@ namespace MercadoLibre.SDK
 
             var json = await response.Content.ReadAsStringAsync();
 
-            var sites = JsonSerializer.Deserialize<SiteModel[]>(json);
+            var sites = JsonSerializer.Deserialize<SiteModel[]>(json, options);
 
             Assert.Less(0, sites.Length);
             Assert.AreEqual("MLA", sites[0].Id);
             Assert.AreEqual("Argentina", sites[0].Name);
+            Assert.AreEqual(CountryEnumModel.AR, sites[0].Country);
 
             mockHttp.VerifyNoOutstandingExpectation();
         }
