@@ -4,7 +4,7 @@ This is the official .NET SDK for MercadoLibre's Platform. [![Build status](http
 
 ## How do I install it?
 
-To install the SDK with [nuget](https://www.nuget.org/packages/MercadoLibreSdk/1.0.0-alpha), run the following command in the Package Manager Console:
+To install the SDK with [nuget](https://www.nuget.org/packages/MercadoLibreSdk/x.x.x), run the following command in the Package Manager Console:
 
 ```nuget
 PM> Install-Package MercadoLibreSdk -prerelease
@@ -80,11 +80,11 @@ var success = await MercadoLibreApiService.AuthorizeAsync(credentials, code, cal
 ## Making GET calls
 
 ```csharp
-var p = new HttpParams().Add("access_token", m.Credentials.AccessToken)
+var p = new HttpParams().Add("a param", "a value")
                         .Add("another_param", "another value")
                         .Add("you can chain", "the method calls");
 
-var response = await m.GetAsync("/users/me", p);
+var response = await m.GetAsync("/users/me", p, accessToken: m.Credentials.AccessToken);
 
 if (response.IsSuccessStatusCode)
 {
@@ -97,25 +97,25 @@ if (response.IsSuccessStatusCode)
 ## Making POST calls
 
 ```csharp
-var p = new HttpParams().Add("access_token", m.Credentials.AccessToken);
+var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.PostAsync("/items", p, new {foo="bar"});
+var r = await m.PostAsync("/items", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
 ```
 
 ## Making PUT calls
 
 ```csharp
-var p = new HttpParams().Add("access_token", m.Credentials.AccessToken);
+var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.PutAsync("/items/123", p, new {foo="bar"});
+var r = await m.PutAsync("/items/123", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
 ```
 
 ## Making DELETE calls
 
 ```csharp
-var p = new HttpParams().Add("access_token", m.Credentials.AccessToken);
+var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.DeleteAsync("/items/123", ps);
+var r = await m.DeleteAsync("/items/123", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
 ```
 
 ## Strongly typed calls
