@@ -120,16 +120,15 @@ var r = await m.DeleteAsync("/items/123", p, new { foo = "bar" }, accessToken: m
 
 ## Strongly typed calls
 
-If you know what JSON you're expecting you can create your own classes decorated with the `System.Runtime.Serialization.DataContract` attribute.
+If you know what JSON you're expecting you can create your own classes decorated with the `System.Text.Json` attribute.
 
 ```csharp
-[DataContract]
 public class Category
 {
-    [DataMember(Name = "id")]
+    [JsonPropertyName("id")]
     public string Id { get; set; }
 
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public string Name { get; set; }
 }
 
