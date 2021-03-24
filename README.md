@@ -2,6 +2,10 @@
 
 This is a .NET SDK for MercadoLibre's Platform. [![Build status](https://ci.appveyor.com/api/projects/status/wc02olyp8oc69l2j?svg=true)](https://ci.appveyor.com/project/comsechq/mercadolibre-net-sdk)
 
+## Is this the official Mercado libre SDK for .NET?
+
+No. We forked the .NET SDK a while back and ended up tweaking it to better suits our needs.
+
 ## How do I install it?
 
 To install the SDK with [nuget](https://www.nuget.org/packages/MercadoLibreSdk/x.x.x), run the following command in the Package Manager Console:
@@ -81,7 +85,11 @@ As long as the `Credentials.AccessToken` property is set on the `MeliApiService`
 
 Read more about [authenticating requests](https://global-selling.mercadolibre.com/devsite/authentication-and-authorization-global-selling) on the official API docs.
 
-A retry interceptor will automatically refresh the token when it's expired.
+A handle result policy will automatically refresh the token when it's expired.
+
+## Do I always need to include the ```access_token``` as a parameter?
+
+Yes. From April 2021 onwawrds, every request API will need an `Authorization` HTTP header.
 
 ## Making GET calls
 
@@ -152,11 +160,3 @@ var token = JsonConvert.DeserializeAnonymousType (json, new {refresh_token="", a
 
 var refreshToken = token.refresh_token;
 ```
-
-## Do I always need to include the ```access_token``` as a parameter?
-
-Yes. From April 2021 onwawrds, every request API will need an `Authorization` HTTP header.
-
-## Is this the official Mercado libre SDK for .NET?
-
-No. We forked the .NET SDK a while back and ended up tweaking it to better suits our needs.
