@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -7,68 +6,46 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using HttpParamsUtility;
-using MercadoLibre.SDK.Http;
 using MercadoLibre.SDK.Meta;
 using MercadoLibre.SDK.Models;
-using Moq;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 
 namespace MercadoLibre.SDK
 {
     [TestFixture]
+    [Parallelizable]
     public class MeliApiServiceTest
     {
-        private MeliApiService service;
-
-        private Mock<IHttpClientProvider> providerMock;
-        private MockHttpMessageHandler mockHttp;
-
-        [SetUp]
-        public void Setup()
+        public MeliApiService Setup(out HttpClient client, out MockHttpMessageHandler handler)
         {
-            providerMock = new Mock<IHttpClientProvider>();
-            mockHttp = new MockHttpMessageHandler();
+            handler = new MockHttpMessageHandler();
+            client = new HttpClient(handler);
 
             var credentials = new MeliCredentials(MeliSite.Argentina, 123456, "secret");
 
-            service = new MeliApiService
-                      {
-                          HttpClientProvider = providerMock.Object,
-                          Credentials = credentials
-                      };
+            var service = new MeliApiService(client)
+            {
+                Credentials = credentials
+            };
 
-            providerMock.Setup(call => call.Create(It.IsAny<bool>()))
-                        .Returns(new HttpClient(mockHttp));
-
-            providerMock.Setup(call => call.Create(It.IsAny<HttpClientHandler>(), It.IsAny<bool>()))
-                        .Returns(new HttpClient(mockHttp));
+            return service;
         }
 
         [Test]
         public void TestSdkUserAgent()
         {
-            Assert.AreEqual("MELI-NET-SDK", MeliApiService.SdkUserAgent);
+            var _ = Setup(out var client, out var _);
 
-            MeliApiService.SdkUserAgent = "MY-MELI-NET-SDK";
-
-            Assert.AreEqual("MY-MELI-NET-SDK", MeliApiService.SdkUserAgent);
-        }
-
-        [Test]
-        public void TestHttpClientIsInitializedWithDefaultSettings()
-        {
-            var realService = new MeliApiService();
-
-            var client = realService.HttpClientProvider.Create();
-
-            Assert.IsTrue(client.DefaultRequestHeaders.UserAgent.ToString().StartsWith("MELI-NET-SDK/"));
             Assert.AreEqual("application/json", client.DefaultRequestHeaders.Accept.ToString());
+            Assert.IsTrue(client.DefaultRequestHeaders.UserAgent.ToString().StartsWith("MELI-NET-SDK/"));
         }
-
+        
         [Test]
         public void TestGetAuthUrl()
         {
+            var service = Setup(out _, out var _);
+
             var url = service.GetAuthUrl(123456, MeliSite.Mexico, "http://someurl.com");
 
             Assert.AreEqual("https://auth.mercadolibre.com.mx/authorization?response_type=code&client_id=123456&redirect_uri=http%3a%2f%2fsomeurl.com", url);
@@ -77,6 +54,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestAuthorizeAsyncIsSuccessful()
         {
+            var service = Setup(out _, out var mockHttp);
+
             service.Credentials.Site = MeliSite.Mexico;
 
             var eventArgs = new List<MeliTokenEventArgs>();
@@ -116,6 +95,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestAuthorizeAsyncIsNotSuccessful()
         {
+            var service = Setup(out _, out var mockHttp);
+
             service.Credentials.Site = MeliSite.Ecuador;
 
             mockHttp.Expect(HttpMethod.Post, "https://api.mercadolibre.com/oauth/token")
@@ -154,6 +135,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestGetAsyncToGetSites()
         {
+            var service = Setup(out _, out var mockHttp);
+
             service.Credentials.Site = MeliSite.Peru;
 
             var responsePayload = new[] {new {id = "MLA", name = "Argentina", country = "Argentina"}, new {id = "MLB", name = "Brazil", country = "Brazil"}};
@@ -183,6 +166,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestGetAsyncHandleErrors()
         {
+            var service = Setup(out _, out var mockHttp);
+
             mockHttp.Expect(HttpMethod.Get, "/users/me")
                     .Respond(HttpStatusCode.InternalServerError);
 
@@ -196,6 +181,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestPostAsync()
         {
+            var service = Setup(out _, out var mockHttp);
+
             mockHttp.Expect(HttpMethod.Post, "/items")
                     .WithQueryString("hello", "boo boo")
                     .WithContent(@"{""foo"":""bar""}")
@@ -211,6 +198,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestPutAsync()
         {
+            var service = Setup(out _, out var mockHttp);
+
             mockHttp.Expect(HttpMethod.Put, "/items/123")
                     .WithContent(@"{""foo"":""bar""}")
                     .Respond(HttpStatusCode.OK);
@@ -225,6 +214,8 @@ namespace MercadoLibre.SDK
         [Test]
         public async Task TestDeleteAsync()
         {
+            var service = Setup(out _, out var mockHttp);
+
             mockHttp.Expect(HttpMethod.Delete, "/items/123")
                     .Respond(HttpStatusCode.OK);
 
@@ -233,30 +224,6 @@ namespace MercadoLibre.SDK
             Assert.IsTrue(response.IsSuccessStatusCode);
 
             mockHttp.VerifyNoOutstandingExpectation();
-        }
-
-        [Test]
-        public void TestReplaceAccessToken()
-        {
-            var url = "https://api.mercadolibre.com/moderations/denounces/MLB11378/ITM/options?first=value&access_token=APP_USR-5128891793554461-041805-e0dd11044b96a343fcb6b1361800bbb0__F_A__-191075056&another=one";
-
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url));
-
-            MeliApiService.ReplaceAccessToken(request, "new_token_value");
-
-            Assert.AreEqual("https://api.mercadolibre.com/moderations/denounces/MLB11378/ITM/options?first=value&access_token=new_token_value&another=one", request.RequestUri.AbsoluteUri);
-        }
-
-        [Test]
-        public void TestReplaceAccessTokenWhenNothingToReplace()
-        {
-            var url = "https://api.mercadolibre.com/moderations/denounces/MLB11378/ITM/options?first=value&another=one";
-
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url));
-
-            MeliApiService.ReplaceAccessToken(request, "new_token_value");
-
-            Assert.AreEqual("https://api.mercadolibre.com/moderations/denounces/MLB11378/ITM/options?first=value&another=one", request.RequestUri.AbsoluteUri);
         }
     }
 }

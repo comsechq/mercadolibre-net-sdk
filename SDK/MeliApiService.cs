@@ -6,11 +6,11 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using System.Web;
 using HttpParamsUtility;
-using MercadoLibre.SDK.Http;
 using MercadoLibre.SDK.Meta;
 using MercadoLibre.SDK.Models;
+using Polly;
+using Polly.Retry;
 
 namespace MercadoLibre.SDK
 {
@@ -19,36 +19,26 @@ namespace MercadoLibre.SDK
     /// </summary>
     public class MeliApiService : IMeliApiService
     {
-        public static readonly string SdkVersion = Assembly.GetExecutingAssembly()
-                                                           .GetName()
-                                                           .Version
-                                                           .ToString();
-        public static string SdkUserAgent = "MELI-NET-SDK";
-        public static Uri ApiUrl = new Uri("https://api.mercadolibre.com", UriKind.Absolute);
+        private readonly HttpClient client;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MeliApiService" /> class.
+        /// Constructor.
         /// </summary>
-        public MeliApiService()
+        /// <param name="httpClient"></param>
+        public MeliApiService(HttpClient httpClient)
         {
-            HttpClientProvider = new HttpClientProvider
-                                 {
-                                     RetryIntercept = RequestNewToken,
-                                     InitialiseWith = client =>
-                                         {
-                                             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(SdkUserAgent, SdkVersion));
-                                             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                                         }
-                                 };
-        }
+            if (httpClient == null)
+            {
+                throw new ArgumentNullException(nameof(httpClient), "HttpClient required. Did you forget to register it as a dependency?");
+            }
 
-        /// <summary>
-        /// Gets or sets the HTTP client provider.
-        /// </summary>
-        /// <value>
-        /// The HTTP client provider.
-        /// </value>
-        public IHttpClientProvider HttpClientProvider { get; set; }
+            httpClient.BaseAddress = new Uri("https://api.mercadolibre.com", UriKind.Absolute);
+
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MELI-NET-SDK", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+
+            client = httpClient;
+        }
 
         /// <summary>
         /// Gets or sets the credentials.
@@ -101,9 +91,9 @@ namespace MercadoLibre.SDK
                                              .Add("code", code)
                                              .Add("redirect_uri", redirectUri);
 
-            using (var client = HttpClientProvider.Create(false))
+            try
             {
-                var tokens = await SendAsync<TokenResponse>(client, HttpMethod.Post, ApiUrl, "/oauth/token", parameters);
+                var tokens = await SendAsync<TokenResponse>(HttpMethod.Post, "/oauth/token", parameters);
 
                 if (tokens != null)
                 {
@@ -112,139 +102,33 @@ namespace MercadoLibre.SDK
                     success = true;
                 }
             }
-
+            catch(HttpRequestException _)
+            {
+                success = false;
+            }
+            
             return success;
         }
 
-        private int refreshTokenAttempt = 0;
-
         /// <summary>
-        /// Request a new token.
+        /// Initializes a new <see cref="HttpRequestMessage"/> from given parameters.
         /// </summary>
-        /// <param name="originalRequest">The original request.</param>
-        /// <param name="httpResponseMessage">The HTTP response message.</param>
-        /// <returns>
-        /// True to tell <see cref="RetryDelegatingHandler" /> to retry the original request.
-        /// </returns>
-        /// <remarks>
-        /// Hook called automatically (set in constructor) by HttpClient after each request.
-        /// </remarks>
-        private async Task<bool> RequestNewToken(HttpRequestMessage originalRequest, HttpResponseMessage httpResponseMessage)
-        {
-            var shouldRetry = false;
-
-            refreshTokenAttempt++;
-
-            // Retry only once and if we have a refresh token and the token is invalid
-            if (!httpResponseMessage.IsSuccessStatusCode
-                && Credentials != null 
-                && !string.IsNullOrEmpty(Credentials.RefreshToken)
-                && refreshTokenAttempt <= 1)
-            {
-                var content = await httpResponseMessage.Content.ReadAsStreamAsync();
-
-                var response = await JsonSerializer.DeserializeAsync<ErrorResponse>(content);
-
-                if (response?.Message.Equals("invalid token", StringComparison.InvariantCultureIgnoreCase) ?? false)
-                {
-                    var values = new Dictionary<string, string>
-                    {
-                        {"grant_type", "refresh_token"},
-                        {"client_id", Credentials.ClientId.ToString()},
-                        {"client_secret", Credentials.ClientSecret},
-                        {"refresh_token", Credentials.RefreshToken}
-                    };
-
-                    var formUrlEncodedContent = new FormUrlEncodedContent(values);
-                    
-                    // We don't use HttpClientProvider to obtain an HttpClient instance because we don't want a retry intercept
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(SdkUserAgent, SdkVersion));
-                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                        var request = new HttpRequestMessage
-                                      {
-                                          RequestUri = new Uri($"{ApiUrl}oauth/token"),
-                                          Method = HttpMethod.Post,
-                                          Content = formUrlEncodedContent
-                                      };
-                        
-                        request.Content.Headers.Add("content-type", "application/x-www-form-urlencoded");
-
-                        var tokenResponse = await client.SendAsync(request);
-
-                        if (tokenResponse.IsSuccessStatusCode)
-                        {
-                            var json = await tokenResponse.Content.ReadAsStreamAsync();
-
-                            var newTokens = await JsonSerializer.DeserializeAsync<TokenResponse>(json);
-
-                            if (newTokens != null)
-                            {
-                                Credentials.SetTokens(newTokens);
-
-                                ReplaceAccessToken(originalRequest, newTokens.AccessToken);
-
-                                shouldRetry = true;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return shouldRetry;
-        }
-
-        /// <summary>
-        /// Replaces the access token in the URI of the <see cref="request"/> (if present).
-        /// </summary>
-        /// <param name="request">The request.</param>
-        /// <param name="newAccessToken">The new access token.</param>
-        [Obsolete("Will be obsolete after 2021-04-01 when the access_token parameter will be replaced by an authorization header")]
-        public static void ReplaceAccessToken(HttpRequestMessage request, string newAccessToken)
-        {
-            var url = request.RequestUri.AbsoluteUri;
-
-            if (url.Contains("access_token="))
-            {
-                var query = HttpUtility.ParseQueryString(request.RequestUri.Query);
-                
-                query["access_token"] = newAccessToken;
-
-                var uriBuilder = new UriBuilder(request.RequestUri)
-                                 {
-                                     Query = query.ToString()
-                                 };
-                
-                request.RequestUri = new Uri(uriBuilder.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Sends the specified client.
-        /// </summary>
-        /// <param name="client">The client.</param>
-        /// <param name="method">The method.</param>
-        /// <param name="baseAddress">The base address (e.g. "https://api.mercadolibre.com/").</param>
-        /// <param name="resource">The relative resource (e.g. "/users/me").</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <param name="content">The content (will be serialized to JSON).</param>
+        /// <param name="method"></param>
+        /// <param name="resource"></param>
+        /// <param name="parameters"></param>
+        /// <param name="content"></param>
         /// <returns></returns>
-        protected async Task<HttpResponseMessage> SendAsync(HttpClient client, HttpMethod method, Uri baseAddress, 
-                                                            string resource, HttpParams parameters, object content = null)
+        private HttpRequestMessage ToRequestMessage(HttpMethod method, string resource, HttpParams parameters, object content = null)
         {
             var requestUrl = parameters == null
                 ? resource
                 : $"{resource}?{parameters}";
 
-            client.BaseAddress = baseAddress;
-
             var request = new HttpRequestMessage
-                          {
-                              RequestUri = new Uri(requestUrl, UriKind.Relative),
-                              Method = method,
-                          };
+            {
+                RequestUri = new Uri(requestUrl, UriKind.Relative),
+                Method = method,
+            };
 
             if (!string.IsNullOrEmpty(Credentials?.AccessToken))
             {
@@ -257,34 +141,98 @@ namespace MercadoLibre.SDK
 
                 request.Content = new StringContent(json);
             }
-            
-            refreshTokenAttempt = 0;
 
-            var response = await client.SendAsync(request);
+            return request;
+        }
+        
+        /// <summary>
+        /// Sends the specified client.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="resource">The relative resource (e.g. "/users/me").</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="content">The content (will be serialized to JSON).</param>
+        /// <returns></returns>
+        protected async Task<HttpResponseMessage> SendAsync(HttpMethod method, string resource, HttpParams parameters, object content = null)
+        {
+            // Inspired by https://www.jerriepelser.com/blog/refresh-google-access-token-with-polly/
+            var policy = CreateTokenRefreshPolicy();
+
+            var response = await policy.ExecuteAsync(() => {
+                // Important not to re-use the request message between attempts
+                var request = ToRequestMessage(method, resource, parameters, content);
+                return client.SendAsync(request);
+            });
             
             return response;
+        }
+
+        private async Task<TokenResponse> RefreshAccessToken()
+        {
+            TokenResponse newTokens = null;
+            
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri("/oauth/token", UriKind.Relative),
+                Method = HttpMethod.Post,
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    {"grant_type", "refresh_token"},
+                    {"client_id", Credentials.ClientId.ToString()},
+                    {"client_secret", Credentials.ClientSecret},
+                    {"refresh_token", Credentials.RefreshToken}
+                })
+            };
+
+            var response = await client.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStreamAsync();
+
+                newTokens = await JsonSerializer.DeserializeAsync<TokenResponse>(json);
+
+                if (newTokens != null)
+                {
+                    // Will fire a MeliTokenEventArgs if the tokens have changed (and need to be persisted)
+                    Credentials.SetTokens(newTokens);
+                }
+            }
+
+            return newTokens;
+        }
+
+        private AsyncRetryPolicy<HttpResponseMessage> CreateTokenRefreshPolicy()
+        {
+            var policy = Policy.HandleResult<HttpResponseMessage>(msg =>
+                    msg.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    && Credentials != null
+                    && !string.IsNullOrEmpty(Credentials.RefreshToken))
+                .RetryAsync(1, async (result, retryCount, context) =>
+                {
+                    var newAccessToken = await RefreshAccessToken();
+                });
+
+            return policy;
         }
 
         /// <summary>
         /// Sends the specified client and deserializes the JSON response to the given <see cref="T" /> model.
         /// </summary>
         /// <typeparam name="T">The type of the model expected as a JSON response.</typeparam>
-        /// <param name="client">The HTTP client.</param>
         /// <param name="method">The method.</param>
-        /// <param name="baseAddress">The base address.</param>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content (will be serialized to JSON).</param>
         /// <returns>
         ///   <see cref="T" />
         /// </returns>
-        protected async Task<T> SendAsync<T>(HttpClient client, HttpMethod method, Uri baseAddress, 
-                                             string resource, HttpParams parameters, object content = null)
+        protected async Task<T> SendAsync<T>(HttpMethod method, string resource, HttpParams parameters, object content = null)
         {
-            var result = default(T);
+            T result;
 
-            var response = await SendAsync(client, method, baseAddress, resource, parameters, content);
-
+            var response = await SendAsync(method, resource, parameters, content);
+            
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions();
@@ -293,6 +241,10 @@ namespace MercadoLibre.SDK
                 var json = await response.Content.ReadAsStreamAsync();
 
                 result = await JsonSerializer.DeserializeAsync<T>(json, options);
+            }
+            else
+            {
+                throw new HttpRequestException(response.ReasonPhrase);
             }
             
             return result;
@@ -303,16 +255,10 @@ namespace MercadoLibre.SDK
         /// </summary>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
+        public async Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync(client, HttpMethod.Get, ApiUrl, resource, parameters);
-            }
+            return await SendAsync(HttpMethod.Get, resource, parameters);
         }
 
         /// <summary>
@@ -321,16 +267,10 @@ namespace MercadoLibre.SDK
         /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<T> GetAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
+        public async Task<T> GetAsync<T>(string resource, HttpParams parameters = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync<T>(client, HttpMethod.Get, ApiUrl, resource, parameters);
-            }
+            return await SendAsync<T>(HttpMethod.Get, resource, parameters);
         }
 
         /// <summary>
@@ -339,16 +279,10 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
+        public async Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync(client, HttpMethod.Post, ApiUrl, resource, parameters, content);
-            }
+            return await SendAsync(HttpMethod.Post, resource, parameters, content);
         }
 
         /// <summary>
@@ -358,16 +292,10 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
+        public async Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync<T>(client, HttpMethod.Post, ApiUrl, resource, parameters, content);
-            }
+            return await SendAsync<T>(HttpMethod.Post, resource, parameters, content);
         }
 
         /// <summary>
@@ -376,16 +304,10 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
+        public async Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync(client, HttpMethod.Put, ApiUrl, resource, parameters, content);
-            }
+            return await SendAsync(HttpMethod.Put, resource, parameters, content);
         }
 
         /// <summary>
@@ -395,16 +317,10 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
+        public async Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync<T>(client, HttpMethod.Put, ApiUrl, resource, parameters, content);
-            }
+            return await SendAsync<T>(HttpMethod.Put, resource, parameters, content);
         }
 
         /// <summary>
@@ -412,34 +328,22 @@ namespace MercadoLibre.SDK
         /// </summary>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
+        public async Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync(client, HttpMethod.Delete, ApiUrl, resource, parameters);
-            }
+            return await SendAsync(HttpMethod.Delete, resource, parameters);
         }
-
+        
         /// <summary>
         /// Sends a DELETE request and deserializes the JSON response.
         /// </summary>
         /// <typeparam name="T">The class to use to deserialize the JSON response.</typeparam>
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="handler">The handler.</param>
         /// <returns></returns>
-        public async Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
+        public async Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null)
         {
-            handler = handler ?? new HttpClientHandler();
-
-            using (var client = HttpClientProvider.Create(handler))
-            {
-                return await SendAsync<T>(client, HttpMethod.Delete, ApiUrl, resource, parameters);
-            }
+            return await SendAsync<T>(HttpMethod.Delete, resource, parameters);
         }
     }
 }
