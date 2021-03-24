@@ -56,7 +56,7 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
-        public void TestHttpClientIsInitialisedWithDefaultSettings()
+        public void TestHttpClientIsInitializedWithDefaultSettings()
         {
             var realService = new MeliApiService();
 

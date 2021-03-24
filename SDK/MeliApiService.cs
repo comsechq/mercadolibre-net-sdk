@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -146,18 +147,30 @@ namespace MercadoLibre.SDK
 
                 if (response?.Message.Equals("invalid token", StringComparison.InvariantCultureIgnoreCase) ?? false)
                 {
-                    var parameters = new HttpParams().Add("grant_type", "refresh_token")
-                                                     .Add("client_id", Credentials.ClientId)
-                                                     .Add("client_secret", Credentials.ClientSecret)
-                                                     .Add("refresh_token", Credentials.RefreshToken);
+                    var values = new Dictionary<string, string>
+                    {
+                        {"grant_type", "refresh_token"},
+                        {"client_id", Credentials.ClientId.ToString()},
+                        {"client_secret", Credentials.ClientSecret},
+                        {"refresh_token", Credentials.RefreshToken}
+                    };
 
+                    var formUrlEncodedContent = new FormUrlEncodedContent(values);
+                    
+                    // We don't use HttpClientProvider to obtain an HttpClient instance because we don't want a retry intercept
                     using (var client = new HttpClient())
                     {
+                        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(SdkUserAgent, SdkVersion));
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
                         var request = new HttpRequestMessage
                                       {
-                                          RequestUri = new Uri($"{ApiUrl}oauth/token?{parameters}"),
+                                          RequestUri = new Uri($"{ApiUrl}oauth/token"),
                                           Method = HttpMethod.Post,
+                                          Content = formUrlEncodedContent
                                       };
+                        
+                        request.Content.Headers.Add("content-type", "application/x-www-form-urlencoded");
 
                         var tokenResponse = await client.SendAsync(request);
 
@@ -188,6 +201,7 @@ namespace MercadoLibre.SDK
         /// </summary>
         /// <param name="request">The request.</param>
         /// <param name="newAccessToken">The new access token.</param>
+        [Obsolete("Will be obsolete after 2021-04-01 when the access_token parameter will be replaced by an authorization header")]
         public static void ReplaceAccessToken(HttpRequestMessage request, string newAccessToken)
         {
             var url = request.RequestUri.AbsoluteUri;
@@ -215,11 +229,10 @@ namespace MercadoLibre.SDK
         /// <param name="baseAddress">The base address (e.g. "https://api.mercadolibre.com/").</param>
         /// <param name="resource">The relative resource (e.g. "/users/me").</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="content">The content (will be serialised to JSON).</param>
-        /// <param name="accessToken">The access token.</param>
+        /// <param name="content">The content (will be serialized to JSON).</param>
         /// <returns></returns>
         protected async Task<HttpResponseMessage> SendAsync(HttpClient client, HttpMethod method, Uri baseAddress, 
-                                                            string resource, HttpParams parameters, object content = null, string accessToken = null)
+                                                            string resource, HttpParams parameters, object content = null)
         {
             var requestUrl = parameters == null
                 ? resource
@@ -233,9 +246,9 @@ namespace MercadoLibre.SDK
                               Method = method,
                           };
 
-            if (!string.IsNullOrEmpty(accessToken))
+            if (!string.IsNullOrEmpty(Credentials?.AccessToken))
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Credentials.AccessToken);
             }
 
             if (content != null)
@@ -262,16 +275,15 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content (will be serialized to JSON).</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns>
         ///   <see cref="T" />
         /// </returns>
         protected async Task<T> SendAsync<T>(HttpClient client, HttpMethod method, Uri baseAddress, 
-                                             string resource, HttpParams parameters, object content = null, string accessToken = null)
+                                             string resource, HttpParams parameters, object content = null)
         {
             var result = default(T);
 
-            var response = await SendAsync(client, method, baseAddress, resource, parameters, content, accessToken);
+            var response = await SendAsync(client, method, baseAddress, resource, parameters, content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -292,15 +304,14 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<HttpResponseMessage> GetAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync(client, HttpMethod.Get, ApiUrl, resource, parameters, accessToken);
+                return await SendAsync(client, HttpMethod.Get, ApiUrl, resource, parameters);
             }
         }
 
@@ -311,15 +322,14 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<T> GetAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<T> GetAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync<T>(client, HttpMethod.Get, ApiUrl, resource, parameters, accessToken);
+                return await SendAsync<T>(client, HttpMethod.Get, ApiUrl, resource, parameters);
             }
         }
 
@@ -330,15 +340,14 @@ namespace MercadoLibre.SDK
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<HttpResponseMessage> PostAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync(client, HttpMethod.Post, ApiUrl, resource, parameters, content, accessToken);
+                return await SendAsync(client, HttpMethod.Post, ApiUrl, resource, parameters, content);
             }
         }
 
@@ -350,15 +359,14 @@ namespace MercadoLibre.SDK
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The payload for the content of the HTTP request.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<T> PostAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync<T>(client, HttpMethod.Post, ApiUrl, resource, parameters, content, accessToken);
+                return await SendAsync<T>(client, HttpMethod.Post, ApiUrl, resource, parameters, content);
             }
         }
 
@@ -369,15 +377,14 @@ namespace MercadoLibre.SDK
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<HttpResponseMessage> PutAsync(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync(client, HttpMethod.Put, ApiUrl, resource, parameters, content, accessToken);
+                return await SendAsync(client, HttpMethod.Put, ApiUrl, resource, parameters, content);
             }
         }
 
@@ -389,15 +396,14 @@ namespace MercadoLibre.SDK
         /// <param name="parameters">The parameters.</param>
         /// <param name="content">The content.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<T> PutAsync<T>(string resource, HttpParams parameters = null, object content = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync<T>(client, HttpMethod.Put, ApiUrl, resource, parameters, content, accessToken);
+                return await SendAsync<T>(client, HttpMethod.Put, ApiUrl, resource, parameters, content);
             }
         }
 
@@ -407,15 +413,14 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<HttpResponseMessage> DeleteAsync(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync(client, HttpMethod.Delete, ApiUrl, resource, parameters, accessToken);
+                return await SendAsync(client, HttpMethod.Delete, ApiUrl, resource, parameters);
             }
         }
 
@@ -426,15 +431,14 @@ namespace MercadoLibre.SDK
         /// <param name="resource">The resource.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="handler">The handler.</param>
-        /// <param name="accessToken">The access token.</param>
         /// <returns></returns>
-        public async Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null, string accessToken = null)
+        public async Task<T> DeleteAsync<T>(string resource, HttpParams parameters = null, HttpClientHandler handler = null)
         {
             handler = handler ?? new HttpClientHandler();
 
             using (var client = HttpClientProvider.Create(handler))
             {
-                return await SendAsync<T>(client, HttpMethod.Delete, ApiUrl, resource, parameters, accessToken);
+                return await SendAsync<T>(client, HttpMethod.Delete, ApiUrl, resource, parameters);
             }
         }
     }

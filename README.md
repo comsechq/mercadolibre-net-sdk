@@ -1,6 +1,6 @@
 # MercadoLibre's .NET SDK
 
-This is the official .NET SDK for MercadoLibre's Platform. [![Build status](https://ci.appveyor.com/api/projects/status/wc02olyp8oc69l2j?svg=true)](https://ci.appveyor.com/project/comsechq/mercadolibre-net-sdk)
+This is a .NET SDK for MercadoLibre's Platform. [![Build status](https://ci.appveyor.com/api/projects/status/wc02olyp8oc69l2j?svg=true)](https://ci.appveyor.com/project/comsechq/mercadolibre-net-sdk)
 
 ## How do I install it?
 
@@ -10,13 +10,11 @@ To install the SDK with [nuget](https://www.nuget.org/packages/MercadoLibreSdk/x
 PM> Install-Package MercadoLibreSdk -prerelease
 ```
 
-And that's it!
-
 ## How do I start using it?
 
-The first thing to do is to instanciate the `MeliApiService` class. At this point you can query any parts of the Mercado Libre API that do not require an _access token_.
+The first thing to do is to instanciate the `MeliApiService` class.
 
-You can obtain an access token after creating your own application. Read the [Getting Started](http://developers.mercadolibre.com/first-step/) guide for more information.
+You have to obtain an access token after creating your own application. Read the [Getting Started](http://developers.mercadolibre.com/first-step/) guide for more information.
 
 Once you have a _client id_ and _client secret_ for your application, instanciate `MeliCredentials` and assign it to the `MeliApiService.Credentials` property.
 
@@ -29,7 +27,7 @@ var m = new MeliApiService
 ```
 With this instance you can start working on MercadoLibre's APIs.
 
-There are some design considerations worth to mention:
+There are some design considerations worth mentioning:
 
 1. This SDK is a thin layer on top of [HttpClient](https://msdn.microsoft.com/en-us/library/system.net.http.httpclient(v=vs.118).aspx) to handle the [OAuth](https://en.wikipedia.org/wiki/OAuth) WebServer flow for you.
 2. [Json.NET](http://www.newtonsoft.com/json) is used to serialize and deserialising to and from JSON. It's up to you to call the relevant methods with classes that match the expected json format.
@@ -77,6 +75,14 @@ credentials.TokensChanged += (sender, args) => { doSomethingWithNewTokenValues(a
 var success = await MercadoLibreApiService.AuthorizeAsync(credentials, code, callBackUrl);
 ```
 
+## Making authenticated calls to the API
+
+As long as the `Credentials.AccessToken` property is set on the `MeliApiService`, an `Authorization: Bearer YOUR_TOKEN` header will be set automatically when making requests.
+
+Read more about [authenticating requests](https://global-selling.mercadolibre.com/devsite/authentication-and-authorization-global-selling) on the official API docs.
+
+A retry interceptor will automatically refresh the token when it's expired.
+
 ## Making GET calls
 
 ```csharp
@@ -84,7 +90,7 @@ var p = new HttpParams().Add("a param", "a value")
                         .Add("another_param", "another value")
                         .Add("you can chain", "the method calls");
 
-var response = await m.GetAsync("/users/me", p, accessToken: m.Credentials.AccessToken);
+var response = await m.GetAsync("/users/me", p);
 
 if (response.IsSuccessStatusCode)
 {
@@ -99,7 +105,7 @@ if (response.IsSuccessStatusCode)
 ```csharp
 var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.PostAsync("/items", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
+var r = await m.PostAsync("/items", p, new { foo = "bar" });
 ```
 
 ## Making PUT calls
@@ -107,7 +113,7 @@ var r = await m.PostAsync("/items", p, new { foo = "bar" }, accessToken: m.Crede
 ```csharp
 var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.PutAsync("/items/123", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
+var r = await m.PutAsync("/items/123", p, new { foo = "bar" });
 ```
 
 ## Making DELETE calls
@@ -115,7 +121,7 @@ var r = await m.PutAsync("/items/123", p, new { foo = "bar" }, accessToken: m.Cr
 ```csharp
 var p = new HttpParams().Add("a param", "a value");
 
-var r = await m.DeleteAsync("/items/123", p, new { foo = "bar" }, accessToken: m.Credentials.AccessToken);
+var r = await m.DeleteAsync("/items/123", p, new { foo = "bar" });
 ```
 
 ## Strongly typed calls
@@ -133,7 +139,6 @@ public class Category
 }
 
 var categories = await m.GetAsync<Category[]>("/sites/MLB/categories");
-
 ```
 
 ## Deserializing with an anonymous type
@@ -150,15 +155,8 @@ var refreshToken = token.refresh_token;
 
 ## Do I always need to include the ```access_token``` as a parameter?
 
-No. Actually most `GET` requests don't need an `access_token` and it is easier to avoid them and also it is better in terms of caching.
-But this decision is left to you. You should decide when it is necessary to include it or not.
+Yes. From April 2021 onwawrds, every request API will need an `Authorization` HTTP header.
 
-## Community
+## Is this the official Mercado libre SDK for .NET?
 
-You can contact us if you have questions using the standard communication channels described in the [developer's site](http://melidevelopers.invisionzone.com/)
-
-## I want to contribute!
-
-That is great! Just fork the project in github. Create a topic branch, write some code, and add some tests for your new code.
-
-Thanks for helping!
+No. We forked the .NET SDK a while back and ended up tweaking it to better suits our needs.
