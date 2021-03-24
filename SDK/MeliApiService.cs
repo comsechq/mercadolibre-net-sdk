@@ -144,28 +144,6 @@ namespace MercadoLibre.SDK
 
             return request;
         }
-        
-        /// <summary>
-        /// Sends the specified client.
-        /// </summary>
-        /// <param name="method">The method.</param>
-        /// <param name="resource">The relative resource (e.g. "/users/me").</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <param name="content">The content (will be serialized to JSON).</param>
-        /// <returns></returns>
-        protected async Task<HttpResponseMessage> SendAsync(HttpMethod method, string resource, HttpParams parameters, object content = null)
-        {
-            // Inspired by https://www.jerriepelser.com/blog/refresh-google-access-token-with-polly/
-            var policy = CreateTokenRefreshPolicy();
-
-            var response = await policy.ExecuteAsync(() => {
-                // Important not to re-use the request message between attempts
-                var request = ToRequestMessage(method, resource, parameters, content);
-                return client.SendAsync(request);
-            });
-            
-            return response;
-        }
 
         private async Task<TokenResponse> RefreshAccessToken()
         {
@@ -214,6 +192,28 @@ namespace MercadoLibre.SDK
                 });
 
             return policy;
+        }
+
+        /// <summary>
+        /// Sends the specified client.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="resource">The relative resource (e.g. "/users/me").</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="content">The content (will be serialized to JSON).</param>
+        /// <returns></returns>
+        protected async Task<HttpResponseMessage> SendAsync(HttpMethod method, string resource, HttpParams parameters, object content = null)
+        {
+            // Inspired by https://www.jerriepelser.com/blog/refresh-google-access-token-with-polly/
+            var policy = CreateTokenRefreshPolicy();
+
+            var response = await policy.ExecuteAsync(() => {
+                // Important not to re-use the request message between attempts
+                var request = ToRequestMessage(method, resource, parameters, content);
+                return client.SendAsync(request);
+            });
+            
+            return response;
         }
 
         /// <summary>
