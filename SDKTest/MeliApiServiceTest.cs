@@ -179,6 +179,24 @@ namespace MercadoLibre.SDK
         }
 
         [Test]
+        public async Task TestGetAsyncWithCsvParameter()
+        {
+            var service = Setup(out _, out var mockHttp);
+
+            mockHttp.Expect(HttpMethod.Get, "/items")
+                .WithQueryString("ids=MLB123,MLB124")
+                .Respond(HttpStatusCode.OK);
+
+            var parameters = new HttpParams().Add("ids", "MLB123,MLB124");
+
+            var response = await service.GetAsync("/items", parameters);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            mockHttp.VerifyNoOutstandingExpectation();
+        }
+
+        [Test]
         public async Task TestPostAsync()
         {
             var service = Setup(out _, out var mockHttp);
