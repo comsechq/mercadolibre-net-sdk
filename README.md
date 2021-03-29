@@ -72,11 +72,13 @@ When the `refresh token` is set, `MeliApiService` will automatically renew the `
 If you need to track access and refresh token changes (for example to store the tokens to use them later) you can subscribe to a `TokensChanged` event:
 
 ```csharp
-var credentials = new MeliCredentials(MeliSite.Argentina, 123456, "secret");
+var credentials = new MeliCredentials(MeliSite.Argentina, 123456, "clientSecret", "accessToken", "refreshToken");
 
 credentials.TokensChanged += (sender, args) => { doSomethingWithNewTokenValues(args.Info); };
 
-var success = await MercadoLibreApiService.AuthorizeAsync(credentials, code, callBackUrl);
+var service = new MeliApiService(new HttpClient()) {Credentials = credentials};
+
+var success = await service.AuthorizeAsync(code, callBackUrl);
 ```
 
 ## Making authenticated calls to the API
