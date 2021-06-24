@@ -18,14 +18,6 @@ namespace MercadoLibre.SDK.Models
         }
 
         /// <summary>
-        /// Gets or sets the Watchdog primary key for that result.
-        /// </summary>
-        /// <value>
-        /// The id.
-        /// </value>
-        public string Id { get; set; }
-
-        /// <summary>
         /// Gets or sets the mercado libre identifier (i.e. their primary key for this result).
         /// </summary>
         /// <value>
@@ -125,6 +117,15 @@ namespace MercadoLibre.SDK.Models
         public string Condition { get; set; }
 
         /// <summary>
+        /// Gets or sets the category identifier.
+        /// </summary>
+        /// <value>
+        /// The category identifier.
+        /// </value>
+        [JsonPropertyName("category_id")]
+        public string CategoryId { get; set; }
+
+        /// <summary>
         /// Gets or sets the status.
         /// </summary>
         /// <value>
@@ -158,8 +159,8 @@ namespace MercadoLibre.SDK.Models
         /// The seller identifier.
         /// </value>
         [JsonPropertyName("seller_id")]
-        public string SellerId { get; set; }
-        
+        public int SellerId { get; set; }
+
         /// <summary>
         /// Gets or sets the pictures.
         /// </summary>
@@ -168,14 +169,5 @@ namespace MercadoLibre.SDK.Models
         /// </value>
         [JsonPropertyName("pictures")]
         public IList<MercadoLibrePictureModel> Pictures { get; set; }
-
-        /// <summary>
-        /// Gets or sets the category identifier.
-        /// </summary>
-        /// <value>
-        /// The category identifier.
-        /// </value>
-        [JsonPropertyName("category_id")]
-        public string CategoryId { get; set; }
     }
 }

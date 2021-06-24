@@ -121,14 +121,14 @@ namespace MercadoLibre.SDK
         private HttpRequestMessage ToRequestMessage(HttpMethod method, string resource, HttpParams parameters, object content = null)
         {
             var requestUrl = parameters == null
-                ? resource
-                : $"{resource}?{parameters}";
+                                 ? resource
+                                 : $"{resource}?{parameters}";
 
             var request = new HttpRequestMessage
-            {
-                RequestUri = new Uri(requestUrl, UriKind.Relative),
-                Method = method,
-            };
+                          {
+                              RequestUri = new Uri(requestUrl, UriKind.Relative),
+                              Method = method,
+                          };
 
             if (!string.IsNullOrEmpty(Credentials?.AccessToken))
             {
@@ -145,22 +145,26 @@ namespace MercadoLibre.SDK
             return request;
         }
 
+        /// <summary>
+        /// Refreshes the access token.
+        /// </summary>
+        /// <returns></returns>
         private async Task<TokenResponse> RefreshAccessToken()
         {
             TokenResponse newTokens = null;
-            
+
             var request = new HttpRequestMessage
-            {
-                RequestUri = new Uri("/oauth/token", UriKind.Relative),
-                Method = HttpMethod.Post,
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    {"grant_type", "refresh_token"},
-                    {"client_id", Credentials.ClientId.ToString()},
-                    {"client_secret", Credentials.ClientSecret},
-                    {"refresh_token", Credentials.RefreshToken}
-                })
-            };
+                          {
+                              RequestUri = new Uri("/oauth/token", UriKind.Relative),
+                              Method = HttpMethod.Post,
+                              Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                                                                  {
+                                                                      {"grant_type", "refresh_token"},
+                                                                      {"client_id", Credentials.ClientId.ToString()},
+                                                                      {"client_secret", Credentials.ClientSecret},
+                                                                      {"refresh_token", Credentials.RefreshToken}
+                                                                  })
+                          };
 
             var response = await client.SendAsync(request);
 
@@ -180,16 +184,20 @@ namespace MercadoLibre.SDK
             return newTokens;
         }
 
+        /// <summary>
+        /// Creates the token refresh policy.
+        /// </summary>
+        /// <returns></returns>
         private AsyncRetryPolicy<HttpResponseMessage> CreateTokenRefreshPolicy()
         {
             var policy = Policy.HandleResult<HttpResponseMessage>(msg =>
-                    msg.StatusCode == System.Net.HttpStatusCode.Unauthorized
-                    && Credentials != null
-                    && !string.IsNullOrEmpty(Credentials.RefreshToken))
-                .RetryAsync(1, async (result, retryCount, context) =>
-                {
-                    var newAccessToken = await RefreshAccessToken();
-                });
+                                                                      msg.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                                                                      && Credentials != null
+                                                                      && !string.IsNullOrEmpty(Credentials.RefreshToken))
+                               .RetryAsync(1, async (result, retryCount, context) =>
+                                              {
+                                                  var newAccessToken = await RefreshAccessToken();
+                                              });
 
             return policy;
         }
@@ -207,11 +215,12 @@ namespace MercadoLibre.SDK
             // Inspired by https://www.jerriepelser.com/blog/refresh-google-access-token-with-polly/
             var policy = CreateTokenRefreshPolicy();
 
-            var response = await policy.ExecuteAsync(() => {
-                // Important not to re-use the request message between attempts
-                var request = ToRequestMessage(method, resource, parameters, content);
-                return client.SendAsync(request);
-            });
+            var response = await policy.ExecuteAsync(() =>
+                                                     {
+                                                         // Important not to re-use the request message between attempts
+                                                         var request = ToRequestMessage(method, resource, parameters, content);
+                                                         return client.SendAsync(request);
+                                                     });
             
             return response;
         }
@@ -232,14 +241,13 @@ namespace MercadoLibre.SDK
             T result;
 
             var response = await SendAsync(method, resource, parameters, content);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions();
                 options.Converters.Add(new JsonStringEnumConverterWithAttributeSupport());
 
                 var json = await response.Content.ReadAsStreamAsync();
-
                 result = await JsonSerializer.DeserializeAsync<T>(json, options);
             }
             else

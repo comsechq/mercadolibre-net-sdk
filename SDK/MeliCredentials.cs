@@ -17,6 +17,16 @@ namespace MercadoLibre.SDK
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="MeliCredentials"/> class.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <remarks>Used for unit testing.</remarks>
+        public MeliCredentials(string accessToken)
+        {
+            AccessToken = accessToken;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MeliCredentials" /> class.
         /// </summary>
         /// <param name="site">The site.</param>
